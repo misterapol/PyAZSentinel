@@ -29,8 +29,8 @@ ENV/
 env.bak/
 venv.bak/
 
-# IDE
-.vscode/settings.json
+# IDE - ignore personal settings, keep shared workspace config
+.vscode/
 .idea/
 *.swp
 *.swo
