@@ -265,10 +265,6 @@ If you're migrating from the PowerShell AzSentinel module, here's the mapping:
 | `Update-AzSentinelIncident` | `client.incidents.update()` | `pyazsentinel incidents update` |
 | `Export-AzSentinel` | `client.export_all()` | `pyazsentinel export` |
 
-## Contributing
-
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
-
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
