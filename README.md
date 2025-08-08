@@ -1,231 +1,280 @@
-# Azure Sentinel
+# PyAZSentinel
 
-| branch      | status                                                                                         |
-| ----------- | ---------------------------------------------------------------------------------------------- |
-| master      | ![](https://github.com/wortell/AZSentinel/workflows/Build-Module/badge.svg?branch=master)      |
-| development | ![](https://github.com/wortell/AZSentinel/workflows/Build-Module/badge.svg?branch=development) |
+[![Python](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Azure Sentinel is a cloud-native SIEM that provides intelligent security analytics for your entire enterprise at cloud scale. Get limitless cloud speed and scale to help focus on what really matters. Easily collect data from all your cloud or on-premises assets, Office 365, Azure resources, and other clouds. Effectively detect threats with built-in machine learning from Microsoft’s security analytics experts. Automate threat response, using built-in orchestration and automation playbooks. [read more](https://docs.microsoft.com/en-us/azure/sentinel/overview)
+A Python SDK and CLI tool for managing Azure Sentinel resources. This is a Python port of the original PowerShell AzSentinel module.
 
-## Why this PowerShell Module
+## Overview
 
-At the moment there is no documented API, ARM or PowerShell module to configure Azure Sentinel. After doing some research we were able to find the API's that are currently being used by the Azure Portal and based on that we've written a PowerShell module to manage Azure Sentinel through PowerShell.
+PyAZSentinel provides a comprehensive Python interface for managing Azure Sentinel resources including:
 
-## Getting Started
+- **Alert Rules**: Create, read, update, delete, and manage alert rules
+- **Hunting Rules**: Manage hunting rules for threat detection
+- **Incidents**: View and update security incidents
+- **Data Connectors**: Manage data source connections
+- **Alert Rule Actions**: Configure automated responses
+- **Import/Export**: Support for JSON and YAML configuration files
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
+## Installation
 
-### Prerequisites
-
-* [PowerShell Core](https://github.com/PowerShell/PowerShell)
-* Powershell [AZ Module](https://www.powershellgallery.com/packages/Az) - tested with version 2.4.0
-* PowerShell [powershell-yaml Module](https://www.powershellgallery.com/packages/powershell-yaml) - tested with version 0.4.0
-
-### Installing
-
-You can install the latest version of AzSentinel module from [PowerShell Gallery](https://www.powershellgallery.com/packages/AzSentinel)
-
-```PowerShell
-Install-Module AzSentinel -Scope CurrentUser -Force
+### From PyPI (when available)
+```bash
+pip install pyazsentinel
 ```
 
-### Usage
+### Development Installation
+```bash
+git clone https://github.com/misterapol/PyAZSentinel.git
+cd PyAZSentinel
+pip install -e .
+```
 
-#### Parameters
+### Development with Optional Dependencies
+```bash
+pip install -e ".[dev]"
+```
 
-See [docs](https://github.com/wortell/AzSentinel/tree/master/docs) folder for documentation regarding the Functions and the available parameters
+## Quick Start
 
-## JSON format
+### Authentication
 
-To create a Azure Sentinel Rule, use the following JSON format.
+PyAZSentinel uses Azure Identity for authentication. You can authenticate using:
 
-### Root schema
-```JSON
+1. **Azure CLI** (recommended for development):
+   ```bash
+   az login
+   ```
+
+2. **Service Principal** (recommended for automation):
+   ```python
+   from pyazsentinel import AzureSentinelClient
+
+   client = AzureSentinelClient(
+       subscription_id="your-subscription-id",
+       workspace_name="your-workspace-name",
+       tenant_id="your-tenant-id",
+       client_id="your-client-id",
+       client_secret="your-client-secret"
+   )
+   ```
+
+3. **Managed Identity** (for Azure resources):
+   ```python
+   from pyazsentinel import AzureSentinelClient
+
+   client = AzureSentinelClient(
+       subscription_id="your-subscription-id",
+       workspace_name="your-workspace-name"
+   )
+   ```
+
+### Python SDK Usage
+
+```python
+from pyazsentinel import AzureSentinelClient
+
+# Initialize client
+client = AzureSentinelClient(
+    subscription_id="your-subscription-id",
+    workspace_name="your-workspace-name"
+)
+
+# List all alert rules
+alert_rules = client.alert_rules.list()
+
+# Get specific alert rule
+rule = client.alert_rules.get("rule-name")
+
+# Create new alert rule from JSON
+with open("alert_rule.json", "r") as f:
+    rule_config = json.load(f)
+new_rule = client.alert_rules.create(rule_config)
+
+# List incidents
+incidents = client.incidents.list()
+
+# Update incident
+client.incidents.update(
+    incident_id="incident-id",
+    status="Closed",
+    classification="BenignPositive"
+)
+```
+
+### CLI Usage
+
+The CLI provides command-line access to all functionality:
+
+```bash
+# List alert rules
+pyazsentinel alert-rules list --workspace-name "my-workspace"
+
+# Get specific alert rule
+pyazsentinel alert-rules get --workspace-name "my-workspace" --rule-name "my-rule"
+
+# Create alert rule from JSON file
+pyazsentinel alert-rules create --workspace-name "my-workspace" --file "rule.json"
+
+# Import multiple alert rules
+pyazsentinel alert-rules import --workspace-name "my-workspace" --file "rules.json"
+
+# List hunting rules
+pyazsentinel hunting-rules list --workspace-name "my-workspace"
+
+# List incidents
+pyazsentinel incidents list --workspace-name "my-workspace"
+
+# Export all configurations
+pyazsentinel export --workspace-name "my-workspace" --output-dir "./backup"
+```
+
+## Configuration File Formats
+
+PyAZSentinel supports the same JSON and YAML formats as the original PowerShell module:
+
+### Alert Rules JSON Format
+```json
 {
   "Scheduled": [
-    ...
+    {
+      "displayName": "Suspicious Process Execution",
+      "description": "Detects suspicious process execution patterns",
+      "severity": "Medium",
+      "enabled": true,
+      "query": "SecurityEvent | where EventID == 4688",
+      "queryFrequency": "PT1H",
+      "queryPeriod": "PT1H",
+      "triggerOperator": "GreaterThan",
+      "triggerThreshold": 0
+    }
   ],
-  "Fusion": [
-    ...
-  ],
-  "MLBehaviorAnalytics": [
-    ...
-  ],
-  "MicrosoftSecurityIncidentCreation": [
-    ...
-  ]
+  "Fusion": [],
+  "MLBehaviorAnalytics": [],
+  "MicrosoftSecurityIncidentCreation": []
 }
 ```
 
-### Scheduled rule
-
-```JSON
-  {
-    "displayName": "string",
-    "description": "string",
-    "AlertRuleTemplateName": "string",
-    "severity": "High",
-    "enabled": true,
-    "query": "SecurityEvent | where EventID == \"4688\" | where CommandLine contains \"-noni -ep bypass $\"",
-    "queryFrequency": "5H",
-    "queryPeriod": "5H",
-    "triggerOperator": "GreaterThan",
-    "triggerThreshold": 5,
-    "suppressionDuration": "6H",
-    "suppressionEnabled": false,
-    "tactics": [
-      "Persistence",
-      "LateralMovement",
-      "Collection"
-    ],
-    "playbookName": "string",
-    "aggregationKind": "string",
-    "incidentConfiguration": {
-      "createIncident": true,
-      "groupingConfiguration": {
-        "GroupingConfigurationEnabled": true,
-        "reopenClosedIncident": true,
-        "lookbackDuration": "PT6H",
-        "entitiesMatchingMethod": "string",
-        "groupByEntities": [
-          "Account",
-          "Ip",
-          "Host",
-          "Url",
-          "FileHash"
-        ]
-      }
-    }
-  }
+### YAML Support
+```yaml
+Scheduled:
+  - displayName: "Suspicious Process Execution"
+    description: "Detects suspicious process execution patterns"
+    severity: "Medium"
+    enabled: true
+    query: "SecurityEvent | where EventID == 4688"
+    queryFrequency: "PT1H"
+    queryPeriod: "PT1H"
+    triggerOperator: "GreaterThan"
+    triggerThreshold: 0
 ```
 
-#### Scheduled property values
+## Features
 
-The following tables describe the values you need to set in the schema.
+### Alert Rules
+- ✅ Create, read, update, delete alert rules
+- ✅ Support for all rule types (Scheduled, Fusion, ML Behavior Analytics, etc.)
+- ✅ Import/export functionality
+- ✅ Enable/disable rules
+- ✅ Rule validation
 
-| Name                         | Type   | Required | Allowed Values                                                                                                                                                      | Example                                                                                                                    |
-| ---------------------------- | ------ | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| displayName                  | string | true     | *                                                                                                                                                                   | DisplayName                                                                                                                |
-| description                  | string | true     | *                                                                                                                                                                   | Description                                                                                                                |
-| severity                     | string | true     | Medium, High, Low, Informational                                                                                                                                    | Medium                                                                                                                     |
-| enabled                      | bool   | true     | true, false                                                                                                                                                         | true                                                                                                                       |
-| query                        | string | true     | special character need to be escaped by \                                                                                                                           | SecurityEvent \| where EventID == \"4688\" \| where CommandLine contains \\"-noni -ep bypass $\\"                          |
-| queryFrequency               | string | true     | Value must be between 5 minutes and 24 hours                                                                                                                        | 30M                                                                                                                        |
-| queryPeriod                  | string | true     | Value must be between 5 minutes and 14 days                                                                                                                         | 6H                                                                                                                         |
-| triggerOperator              | string | true     | GreaterThan, FewerThan, EqualTo, NotEqualTo                                                                                                                         | GreaterThan                                                                                                                |
-| triggerThreshold             | int    | true     | The value must be between 0 and 10000                                                                                                                               | 5                                                                                                                          |
-| suppressionDuration          | string | true     | Value must be greater than 5 minutes                                                                                                                                | 1D                                                                                                                         |
-| suppressionEnabled           | bool   | true     | true, false                                                                                                                                                         | true                                                                                                                       |
-| tactics                      | array  | true     | InitialAccess, Persistence,Execution,PrivilegeEscalation,DefenseEvasion,CredentialAccess,LateralMovement,Discovery,Collection,Exfiltration,CommandAndControl,Impact | true                                                                                                                       |
-| playbookName                 | string | false    | Enter the Logic App name or Resource ID                                                                                                                             | LogicApp01 / /subscriptions/SUBSCRIPTIONID/resourceGroups/RESOURCEGROUPNAME/providers/Microsoft.Logic/workflows/playbook02 |
-| aggregationKind              | string | false    | SingleAlert, AlertPerRow                                                                                                                                            | SingleAlert                                                                                                                |
-| createIncident               | bool   | false    | true, false                                                                                                                                                         | true                                                                                                                       |
-| GroupingConfigurationEnabled | bool   | false    | true, false                                                                                                                                                         | true                                                                                                                       |
-| reopenClosedIncident         | bool   | false    | true, false                                                                                                                                                         | true                                                                                                                       |
-| lookbackDuration             | string | false    | Value must be between 5 minutes and 24 hours.                                                                                                                       | PT6H                                                                                                                       |
-| entitiesMatchingMethod       | string | false    | All, None, Custom                                                                                                                                                   | All                                                                                                                        |
-| groupByEntities              | string | false    | Account, Ip, Host, Url, FileHash                                                                                                                                | Account                                                                                                                    |
-| AlertRuleTemplateName | string | false | Name of the alert rule template | 826bb2f8-7894-4785-9a6b-a8a855d8366f |
+### Hunting Rules
+- ✅ Create, read, update, delete hunting rules
+- ✅ Import/export functionality
+- ✅ Query validation
 
-### Fusion rule
-```JSON
-  {
-    "displayName": "Advanced Multistage Attack Detection",
-    "enabled": true,
-    "alertRuleTemplateName": "f71aba3d-28fb-450b-b192-4e76a83015c8"
-  }
+### Incidents
+- ✅ List and filter incidents
+- ✅ Update incident status and classification
+- ✅ Add comments to incidents
+- ✅ Incident analytics
+
+### Data Connectors
+- ✅ List available data connectors
+- ✅ Configure data source connections
+- ✅ Import connector configurations
+
+### Import/Export
+- ✅ JSON format support
+- ✅ YAML format support
+- ✅ Bulk operations
+- ✅ Configuration validation
+
+## Development
+
+### Setting up Development Environment
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/misterapol/PyAZSentinel.git
+   cd PyAZSentinel
+   ```
+
+2. Create virtual environment:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+3. Install development dependencies:
+   ```bash
+   pip install -e ".[dev]"
+   ```
+
+4. Install pre-commit hooks:
+   ```bash
+   pre-commit install
+   ```
+
+### Running Tests
+
+```bash
+# Run all tests
+pytest
+
+# Run with coverage
+pytest --cov=pyazsentinel
+
+# Run specific test file
+pytest tests/test_alert_rules.py
 ```
 
-#### Scheduled property values
+### Code Formatting
 
-The following tables describe the values you need to set in the schema.
+```bash
+# Format code
+black pyazsentinel tests
 
-| Name                  | Type   | Required | Allowed Values | Example                              |
-| --------------------- | ------ | -------- | -------------- | ------------------------------------ |
-| displayName           | string | true     |                | Advanced Multistage Attack Detection |
-| enabled               | bool   | true     |                | true                                 |
-| alertRuleTemplateName | string | true     |                | f71aba3d-28fb-450b-b192-4e76a83015c8 |
-|                       |        |          |                |
+# Sort imports
+isort pyazsentinel tests
 
-
-
-### MLBehaviorAnalytics rules
-
-```JSON
-  {
-    "displayName": "(Preview) Anomalous SSH Login Detection",
-    "enabled": true,
-    "alertRuleTemplateName": "fa118b98-de46-4e94-87f9-8e6d5060b60b"
-  }
+# Type checking
+mypy pyazsentinel
 ```
 
-#### Scheduled property values
+## Migration from PowerShell Module
 
-The following tables describe the values you need to set in the schema.
+If you're migrating from the PowerShell AzSentinel module, here's the mapping:
 
-| Name                  | Type   | Required | Allowed Values | Example                              |
-| --------------------- | ------ | -------- | -------------- | ------------------------------------ |
-| displayName           | string | true     |                | Advanced Multistage Attack Detection |
-| enabled               | bool   | true     |                | true                                 |
-| alertRuleTemplateName | string | true     |                | f71aba3d-28fb-450b-b192-4e76a83015c8 |
-|                       |        |          |                |
-
-
-### MicrosoftSecurityIncidentCreation rules
-```JSON
-  {
-    "displayName": "Create incidents based on Azure Active Directory Identity Protection alerts",
-    "description": "Create incidents based on all alerts generated in Azure Active Directory Identity Protection",
-    "enabled": true,
-    "productFilter": "Microsoft Cloud App Security",
-    "severitiesFilter": [
-      "High",
-      "Medium",
-      "Low"
-    ],
-    "displayNamesFilter": null
-  }
-```
-#### Scheduled property values
-
-The following tables describe the values you need to set in the schema.
-
-| Name               | Type   | Required | Allowed Values    | Example                                                                                      |
-| ------------------ | ------ | -------- | ----------------- | -------------------------------------------------------------------------------------------- |
-| displayName        | string | true     |                   | Create incidents based on Azure Active Directory Identity Protection alerts                  |
-| enabled            | bool   | true     |                   | true                                                                                         |
-| description        | string | true     |                   | Create incidents based on all alerts generated in Azure Active Directory Identity Protection |
-| productFilter      | string | true     |                   | Microsoft Cloud App Security                                                                 |
-| severitiesFilter   | string | true     | High, Medium, Low | High                                                                                         |
-| displayNamesFilter | string | false    |                   |                                                                                              |
-|                    |        |          |                   |                                                                                              |
-
-
-## Find us
-
-* [GitHub](https://github.com/wortell/AZSentinel)
-* [PowerShell Gallery](https://www.powershellgallery.com/packages/AzSentinel)
+| PowerShell Function | Python SDK | CLI Command |
+|-------------------|------------|-------------|
+| `Get-AzSentinelAlertRule` | `client.alert_rules.get()` | `pyazsentinel alert-rules get` |
+| `New-AzSentinelAlertRule` | `client.alert_rules.create()` | `pyazsentinel alert-rules create` |
+| `Import-AzSentinelAlertRule` | `client.alert_rules.import_from_file()` | `pyazsentinel alert-rules import` |
+| `Get-AzSentinelIncident` | `client.incidents.get()` | `pyazsentinel incidents get` |
+| `Update-AzSentinelIncident` | `client.incidents.update()` | `pyazsentinel incidents update` |
+| `Export-AzSentinel` | `client.export_all()` | `pyazsentinel export` |
 
 ## Contributing
 
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
-
-## Contributors
-
-* A big thank you goes out to all the [contributors](https://github.com/wortell/AzSentinel/contributors) for their contributions!
-
-## Authors
-
-* **Pouyan Khabazi** - *Developer and Maintainer* - [GitHub](https://github.com/pkhabazi) / [Blog](https://pkm-technology.com)
-
-## Versioning
-
-We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/wortell/AzSentinel/tags).
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Acknowledgments
 
-* Hat tip to anyone whose code was used!
+- Original PowerShell module by [Wortell](https://github.com/wortell/AZSentinel)
+- Azure Sentinel team for the underlying APIs
+- Python community for excellent libraries and tools
